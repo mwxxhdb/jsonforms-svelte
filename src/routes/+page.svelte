@@ -1,3 +1,14 @@
-<h1>Welcome to your library project</h1>
-<p>Create your package using @sveltejs/package and preview/showcase your work with SvelteKit</p>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+	import JsonForms from '$lib/JsonForms.svelte';
+	import { renderers } from '$lib/renderers/index.js';
+
+	let data = { name: 'zhangsan', age: 15 };
+</script>
+
+<JsonForms {data} {renderers} />
+
+<hr />
+
+<h1>Raw data</h1>
+<input type="text" bind:value={data.name} />
+<input type="number" bind:value={data.age} />
