@@ -1,8 +1,6 @@
-import type { JsonFormsCellRendererRegistryEntry, JsonFormsRendererRegistryEntry, JsonSchema, UISchemaElement } from "@jsonforms/core"
-import { useStyles } from "./renderers/styles.js";
-import merge from 'lodash/merge.js';
-import cloneDeep from 'lodash/cloneDeep.js';
+import type { JsonSchema, UISchemaElement } from "@jsonforms/core";
 import {
+  Resolve,
   composePaths,
   findUISchema,
   getFirstPrimitiveProp,
@@ -10,76 +8,13 @@ import {
   hasShowRule,
   isEnabled,
   isVisible as isRendererVisible,
-  Resolve,
 } from '@jsonforms/core';
+import cloneDeep from 'lodash/cloneDeep.js';
+import merge from 'lodash/merge.js';
 import type { JsonFormsContext } from "./context.js";
+import { useStyles } from "./renderers/styles.js";
 import { isAnyReadonly } from "./renderers/utils.js";
 
-
-/**
- * Adds styles, isFocused, appliedOptions and onChange
- */
-export const useVanillaControl = <
-  I extends { control: any; handleChange: any }
->(
-  input: I,
-  adaptTarget: (target: any) => any = (v) => v.value
-) => {
-  const appliedOptions = merge(
-    {},
-    cloneDeep(input.control.config),
-    cloneDeep(input.control.uischema.options)
-  );
-
-  let isFocused = false;
-  const onChange = (event: Event) => {
-    input.handleChange(input.control.path, adaptTarget(event.target));
-  };
-
-  const { id, description, errors, label, visible, required } = input.control;
-  const controlWrapper = { id, description, errors, label, visible, required };
-
-  return {
-    ...input,
-    styles: useStyles(input.control.uischema),
-    isFocused,
-    appliedOptions,
-    controlWrapper,
-    onChange,
-  };
-};
-
-/**
- * Adds styles and appliedOptions
- */
-export const useVanillaLayout = <I extends { layout: any }>(input: I) => {
-  const appliedOptions = merge(
-    {},
-    cloneDeep(input.layout.config),
-    cloneDeep(input.layout.uischema.options)
-  );
-  return {
-    ...input,
-    styles: useStyles(input.layout.uischema),
-    appliedOptions,
-  };
-};
-
-/**
- * Adds styles and appliedOptions
- */
-export const useVanillaLabel = <I extends { label: any }>(input: I) => {
-  const appliedOptions = merge(
-    {},
-    cloneDeep(input.label.config),
-    cloneDeep(input.label.uischema.options)
-  );
-  return {
-    ...input,
-    styles: useStyles(input.label.uischema),
-    appliedOptions,
-  };
-};
 
 /**
  * Adds styles, appliedOptions and childUiSchema

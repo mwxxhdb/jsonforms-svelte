@@ -40,13 +40,13 @@
 		validationMode === 'NoValidation' ? [] : validate(ajv.compile(schema), data);
 
 	const dataStore = provideData(data);
-	$: if (!isEqual(data, $dataStore)) dataStore.set(data);
+	$: dataStore.set(data);
 	dataStore.subscribe((d) => {
 		if (!isEqual(d, data)) data = d;
 	});
 
 	const errorsStore = provideErrors(errors);
-	$: if (!isEqual(errors, $errorsStore)) errorsStore.set(errors);
+	$: errorsStore.set(errors);
 	errorsStore.subscribe((d) => {
 		if (!isEqual(d, errors)) errors = d;
 	});

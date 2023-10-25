@@ -6,17 +6,20 @@
 		composeWithUi,
 		createId,
 		createLabelDescriptionFrom,
-		getI18nKeyPrefix,
+		getCombinedErrorMessage,
+		getI18nKey,
 		removeId,
 		Resolve,
-		type ControlElement,
-		getI18nKey,
-		getCombinedErrorMessage
+		type ControlElement
 	} from '@jsonforms/core';
 	import merge from 'lodash/merge.js';
 	import { onDestroy } from 'svelte';
 	import { useStyles } from '../styles.js';
+	import isEqual from 'lodash/isEqual.js';
 	import ControlWrapper from './ControlWrapper.svelte';
+	import fpSet from 'lodash/fp/set.js';
+	import { paths } from 'lodash/fp.js';
+	import type { ChangeEventHandler } from 'svelte/elements';
 
 	export let props: RendererProps<ControlElement>;
 
@@ -76,12 +79,18 @@
 	$: appliedOptions = merge({}, $jsonforms.config, props.uischema.options);
 
 	let value = '';
-	$: value = data;
-	// TODO dispatch data change
-	$: console.log(value);
+	$: if (!isEqual(value, data)) {
+		value = data;
+	}
+
+	const onInput: ChangeEventHandler<HTMLInputElement> = (e) => {
+		//@ts-ignore
+		const newValue = e.target?.value;
+		if (isEqual(newValue, value)) return;
+		rootData.update((d) => fpSet(pathState, newValue, d));
+	};
 </script>
 
-<!-- todo errors -->
 <ControlWrapper
 	{id}
 	description={i18nDescription}
@@ -98,7 +107,8 @@
 		class={styles.control.input}
 		{disabled}
 		placeholder={appliedOptions.placeholder}
-		bind:value
+		{value}
+		on:input={onInput}
 		on:focus={() => (focused = true)}
 		on:blur={() => (focused = false)}
 	/>

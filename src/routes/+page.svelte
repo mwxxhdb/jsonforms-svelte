@@ -3,9 +3,10 @@
 	import { renderers } from '$lib/renderers/index.js';
 
 	let data = { name: 'zhangsan', age: 15 };
+	$: console.log(data);
 </script>
 
-<JsonForms {data} {renderers} />
+<JsonForms bind:data {renderers} />
 
 <hr />
 
