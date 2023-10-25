@@ -1,6 +1,8 @@
 <script lang="ts">
-	export let props: RendererProps<UISchemaElement>;
-	$: console.log(props);
+	import type { Scopable } from '@jsonforms/core';
+	import type { RendererProps } from './compositions.js';
+
+	export let props: RendererProps<Scopable>;
 </script>
 
 {#if props.uischema.scope}

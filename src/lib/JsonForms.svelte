@@ -1,82 +1,83 @@
 <script lang="ts">
 	import {
-		Actions,
 		Generate,
-		configReducer,
-		coreReducer,
 		defaultErrorTranslator,
 		defaultTranslator,
-		i18nReducer,
-		type CoreActions,
+		validate,
 		type ErrorTranslator,
 		type JsonFormsCellRendererRegistryEntry,
 		type JsonFormsRendererRegistryEntry,
-		type JsonFormsUISchemaRegistryEntry,
 		type JsonSchema,
 		type Translator,
 		type UISchemaElement,
 		type ValidationMode
 	} from '@jsonforms/core';
 	import type { ErrorObject } from 'ajv';
+	import Ajv from 'ajv';
+	import isEqual from 'lodash/isEqual.js';
 	import DispatchRenderer from './DispatchRenderer.svelte';
-	import { provideDispatch, provideJsonforms } from './context.js';
+	import { provideData, provideErrors, provideJsonForms, type JsonFormsConfig } from './context.js';
 
 	export let data: string | number | boolean | Array<any> | object;
-	export let schema: JsonSchema | undefined = undefined;
-	export let uischema: UISchemaElement | undefined = undefined;
+	export let schema: JsonSchema = Generate.jsonSchema(typeof data === 'object' ? data : {});
+	export let uischema: UISchemaElement = Generate.uiSchema(schema);
 	export let renderers: JsonFormsRendererRegistryEntry[];
 	export let cells: JsonFormsCellRendererRegistryEntry[] = [];
-	export let config: any = undefined;
+	export let config: JsonFormsConfig = {
+		restrict: false,
+		trim: false,
+		showUnfocusedDescription: false,
+		hideRequiredAsterisk: false
+	};
 	export let readonly: boolean = false;
-	export let uischemas: JsonFormsUISchemaRegistryEntry[] = [];
 	export let validationMode: ValidationMode = 'ValidateAndShow';
-	export let ajv: any = undefined;
+	//@ts-ignore
+	export let ajv: any = new Ajv();
 	export let locale: string = 'en';
 	export let translate: Translator = defaultTranslator;
 	export let translateError: ErrorTranslator = defaultErrorTranslator;
-	export let additionalErrors: ErrorObject[] = [];
+	export let errors: ErrorObject[] =
+		validationMode === 'NoValidation' ? [] : validate(ajv.compile(schema), data);
 
-	const store = provideJsonforms({});
+	const dataStore = provideData(data);
+	$: if (!isEqual(data, $dataStore)) dataStore.set(data);
+	dataStore.subscribe((d) => {
+		if (!isEqual(d, data)) data = d;
+	});
 
-	$: generatorData = typeof data === 'object' ? data : {};
-	$: schemaToUse = schema ?? Generate.jsonSchema(generatorData);
-	$: uischemaToUse = uischema ?? Generate.uiSchema(schemaToUse);
-	$: core = coreReducer(
-		{ data, schema: schemaToUse, uischema: uischemaToUse },
-		Actions.init(data, schemaToUse, uischemaToUse, {
-			validationMode,
-			ajv,
-			additionalErrors
-		})
-	);
-	$: cfg = configReducer(undefined, Actions.setConfig(config));
-	$: i18n = i18nReducer(
-		{ locale, translate, translateError },
-		Actions.updateI18n(locale, translate, translateError)
-	);
+	const errorsStore = provideErrors(errors);
+	$: if (!isEqual(errors, $errorsStore)) errorsStore.set(errors);
+	errorsStore.subscribe((d) => {
+		if (!isEqual(d, errors)) errors = d;
+	});
 
-	$: jsonforms = {
-		core,
-		config: cfg,
-		i18n,
+	const jsonforms = provideJsonForms({
+		schema,
+		uischema,
 		renderers,
 		cells,
-		uischemas,
+		config,
 		readonly,
-		errors: []
-	};
+		validationMode,
+		ajv,
+		locale,
+		translate,
+		translateError
+	});
 
-	$: store.set(jsonforms);
-
-	//@ts-ignore
-	provideDispatch((action: CoreActions) => {
-		jsonforms = {
-			...jsonforms,
-			core: coreReducer(jsonforms.core, action)
-		};
+	$: jsonforms.set({
+		schema,
+		uischema,
+		renderers,
+		cells,
+		config,
+		readonly,
+		validationMode,
+		ajv,
+		locale,
+		translate,
+		translateError
 	});
 </script>
 
-<DispatchRenderer
-	props={{ schema: jsonforms.core.schema, uischema: jsonforms.core.uischema, path: '' }}
-/>
+<DispatchRenderer props={{ schema, uischema, path: '', enabled: true }} />

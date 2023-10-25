@@ -1,34 +1,31 @@
 <script lang="ts">
+	import { isVisible, type RendererProps } from '$lib/compositions.js';
+	import { injectData, injectJsonForms } from '$lib/context.js';
 	import DispatchRenderer from '$lib/DispatchRenderer.svelte';
-	import { injectJsonforms } from '$lib/context.js';
-	import type { LayoutProps } from '$lib/jsonFormsCompositions.js';
-	import { mapStateToLayoutProps, type Layout } from '@jsonforms/core';
+	import type { Layout } from '@jsonforms/core';
 	import { useStyles } from '../styles.js';
 
-	export let props: LayoutProps;
+	export let props: RendererProps<Layout>;
 
-	const jsonforms = injectJsonforms();
+	const rootData = injectData();
+	const jsonforms = injectJsonForms();
 
-	$: layout = { ...props, ...mapStateToLayoutProps({ jsonforms: $jsonforms }, props) };
-	$: elements = (layout.uischema as Layout).elements;
-	$: styles = useStyles(layout.uischema);
+	$: visibleState = isVisible(props, $rootData, $jsonforms.ajv);
 
-	$: layoutClassObject =
-		layout.direction === 'row' ? styles.horizontalLayout : styles.verticalLayout;
+	$: styles = useStyles(props.uischema);
+	$: direction = props.uischema.type === 'HorizontalLayout' ? 'row' : 'column';
+
+	$: layoutClassObject = direction === 'row' ? styles.horizontalLayout : styles.verticalLayout;
 </script>
 
-{#if layout.visible}
+{#if visibleState}
 	<div class={layoutClassObject.root}>
-		{#each elements as element}
+		{#each props.uischema.elements as element}
 			<div class={layoutClassObject.item}>
 				<DispatchRenderer
 					props={{
-						schema: layout.schema,
-						uischema: element,
-						path: layout.path,
-						enabled: layout.enabled,
-						renderers: layout.renderers,
-						cells: layout.cells
+						...props,
+						uischema: element
 					}}
 				/>
 			</div>

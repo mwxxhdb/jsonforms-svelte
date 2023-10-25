@@ -32,9 +32,10 @@ import {
   type OwnPropsOfMasterListItem,
   type StatePropsOfJsonFormsRenderer,
   type UISchemaElement,
-  type JsonFormsSubStates
+  type JsonFormsSubStates,
+  Resolve
 } from '@jsonforms/core';
-import { injectDispatch, injectJsonforms } from './context.js';
+import { injectJsonForms } from './context.js';
 
 export interface RendererProps<U = UISchemaElement> {
   schema: JsonSchema;
@@ -241,10 +242,9 @@ export const useJsonFormsMasterListItem = (props: OwnPropsOfMasterListItem) => {
  * Access bindings via the provided reactive 'renderer' object.
  */
 export const useJsonFormsRenderer = (props: RendererProps) => {
-  const jsonforms = injectJsonforms();
-  const dispatch = injectDispatch();
+  const jsonforms = injectJsonForms();
 
-  if (!jsonforms || !dispatch) {
+  if (!jsonforms) {
     throw "'jsonforms' or 'dispatch' couldn't be injected. Are you within JSON Forms?";
   }
 
@@ -335,4 +335,30 @@ export const useJsonFormsDispatchCell = (props: ControlProps) => {
     mapDispatchToControlProps
   );
   return { cell: control, ...other };
+};
+
+export const isRequired = (
+  schema: JsonSchema,
+  schemaPath: string,
+  rootSchema: JsonSchema
+): boolean => {
+  const pathSegments = schemaPath.split('/');
+  const lastSegment = pathSegments[pathSegments.length - 1];
+  // Skip "properties", "items" etc. to resolve the parent
+  const nextHigherSchemaSegments = pathSegments.slice(
+    0,
+    pathSegments.length - 2
+  );
+  const nextHigherSchemaPath = nextHigherSchemaSegments.join('/');
+  const nextHigherSchema = Resolve.schema(
+    schema,
+    nextHigherSchemaPath,
+    rootSchema
+  );
+
+  return (
+    nextHigherSchema !== undefined &&
+    nextHigherSchema.required !== undefined &&
+    nextHigherSchema.required.indexOf(lastSegment) !== -1
+  );
 };

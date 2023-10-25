@@ -6,18 +6,15 @@ import {
   composePaths,
   findUISchema,
   getFirstPrimitiveProp,
+  hasEnableRule,
+  hasShowRule,
+  isEnabled,
+  isVisible as isRendererVisible,
   Resolve,
 } from '@jsonforms/core';
+import type { JsonFormsContext } from "./context.js";
+import { isAnyReadonly } from "./renderers/utils.js";
 
-export type RendererProps<U = UISchemaElement> = {
-  schema: JsonSchema;
-  uischema: U;
-  path: string;
-  enabled?: boolean;
-  renderers?: JsonFormsRendererRegistryEntry[];
-  cells?: JsonFormsCellRendererRegistryEntry[];
-  config?: any;
-}
 
 /**
  * Adds styles, isFocused, appliedOptions and onChange
@@ -130,3 +127,27 @@ export const useVanillaArrayControl = <I extends { control: any }>(
     childLabelForIndex,
   };
 };
+
+
+export type RendererProps<U = UISchemaElement> = {
+  schema: JsonSchema;
+  uischema: U;
+  path: string;
+  enabled: boolean;
+  visible?: boolean;
+}
+
+export function isVisible(props: RendererProps<UISchemaElement>, data: any, ajv: any): boolean {
+  return props.visible === undefined || hasShowRule(props.uischema)
+    ? isRendererVisible(props.uischema, data, props.path, ajv)
+    : props.visible;
+}
+
+export function isDisabled(props: RendererProps<UISchemaElement>, data: any, jsonforms: JsonFormsContext) {
+  if (jsonforms.readonly) return true;
+  if (hasEnableRule(props.uischema) && !isEnabled(props.uischema, data, props.path, jsonforms.ajv)) return true;
+  if (isAnyReadonly(props.uischema.options, jsonforms.config) === true) return true;
+  //@ts-ignore
+  if (props.schema.readOnly === true) return true;
+  return !props.enabled;
+}
